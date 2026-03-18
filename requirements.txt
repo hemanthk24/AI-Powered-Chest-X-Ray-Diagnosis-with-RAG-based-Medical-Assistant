@@ -1,0 +1,16 @@
+pandas
+numpy
+scikit-learn
+tensorflow
+opencv-python
+pillow
+matplotlib
+fastapi
+uvicorn
+streamlit
+langchain
+langchain-openai
+langchain-community
+pinecone
+pypdf
+tiktoken
