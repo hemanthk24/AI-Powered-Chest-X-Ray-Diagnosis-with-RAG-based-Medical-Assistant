@@ -1,1 +1,1 @@
-## AI-Powered Chest X-Ray Diagnosis with RAG-based Medical Assistant
+## MediAssist AI (Chest X-ray Diagnostic Assistant)
