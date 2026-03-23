@@ -167,6 +167,10 @@ You are an advanced AI medical assistant generating a structured clinical-style 
 - Night Sweats: {patient.night_sweats}
 - Weight Loss: {patient.weight_loss}
 
+👤 Patient Habits & Comorbidity:
+- Smoking : {patient.smoking}
+- Comorbidity (Diabetes/Asthma) : {patient.comorbidity}
+
 ==============================================================
 
 📌 Instructions for Analysis:

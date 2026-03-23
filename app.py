@@ -74,7 +74,8 @@ if st.button("Analyze"):
                 response = requests.post(
                     "http://127.0.0.1:8000/predict",
                     files=files,
-                    data=data
+                    data=data,
+                    timeout=120
                 )
 
                 if response.status_code == 200:
