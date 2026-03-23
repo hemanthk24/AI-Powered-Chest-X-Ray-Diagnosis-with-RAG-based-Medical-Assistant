@@ -11,6 +11,11 @@ Do NOT use external knowledge.
 Guidelines:
 - Give simple and clear explanation
 - Do not make assumptions
+- Explain clearly
+- Relate symptoms to condition
+- Mention uncertainty if needed
+- Suggest consulting a doctor
+- Do not use external knowledge
 - If information is missing, say "I don't know"
 - Always suggest consulting a doctor for serious symptoms
 """),

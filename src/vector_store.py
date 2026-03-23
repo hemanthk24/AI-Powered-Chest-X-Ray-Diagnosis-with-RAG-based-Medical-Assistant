@@ -2,7 +2,7 @@ from pinecone import Pinecone, ServerlessSpec
 from pinecone import ServerlessSpec
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_pinecone import PineconeVectorStore
-from docs_loader import get_chunks
+from src.docs_loader import get_chunks
 import os
 from dotenv import load_dotenv
 
