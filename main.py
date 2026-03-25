@@ -9,8 +9,30 @@ import io
 from src.rag_pipeline import get_rag_chain
 from CV_model_building.preprocess import preprocess_image_inference
 
+# definig for model
+def sparse_focal_loss(gamma=2.0):
+    def loss(y_true, y_pred):
+
+        # 🔥 FIX SHAPE
+        y_true = tf.cast(y_true, tf.int32)
+        y_true = tf.reshape(y_true, [-1])   # ✅ important fix
+
+        # 🔥 cross entropy
+        ce = tf.keras.losses.sparse_categorical_crossentropy(
+            y_true, y_pred
+        )
+
+        # 🔥 focal part
+        p_t = tf.exp(-ce)
+        focal_loss = (1 - p_t) ** gamma * ce
+
+        return focal_loss
+
+    return loss
+
 # 🔥 Load model
-model = tf.keras.models.load_model("CV_model_building/xray_model.keras")
+model = tf.keras.models.load_model("CV_model_building/chest_xray_model.keras",
+                                   custom_objects={"loss": sparse_focal_loss(gamma=2.0)})
 
 # 🔥 Load class names
 with open("CV_model_building/class_names.pkl", "rb") as f:
@@ -143,23 +165,23 @@ async def predict(
 
     # 🔥 Build RAG Query (IMPORTANT)
     query = f"""
-You are an advanced AI medical assistant generating a structured clinical-style report for chest X-ray analysis.
+You are an advanced AI medical assistant generating a structured, clinical-style chest X-ray report.
 
-==================== AI RADIOLOGY REPORT ====================
+                 AI RADIOLOGY REPORT
 
 🔍 Model Prediction Summary:
 - Primary Prediction: {disease}
 - Confidence Score: {confidence:.2f}
 - Risk Classification: {risk_level}
 
-📊 Probability Distribution (All Conditions):
+📊 Probability Distribution:
 {result_dict}
 
 👤 Patient Profile:
 - Age: {patient.age}
 - Oxygen Saturation: {patient.oxygen}%
 
-🩺 Reported Symptoms:
+🩺 Symptoms:
 - Fever: {patient.fever}
 - Breathlessness: {patient.breathlessness}
 - Cough: {patient.cough_days} days ({patient.cough_type})
@@ -167,53 +189,76 @@ You are an advanced AI medical assistant generating a structured clinical-style 
 - Night Sweats: {patient.night_sweats}
 - Weight Loss: {patient.weight_loss}
 
-👤 Patient Habits & Comorbidity:
-- Smoking : {patient.smoking}
-- Comorbidity (Diabetes/Asthma) : {patient.comorbidity}
+👤 Habits & Comorbidities:
+- Smoking: {patient.smoking}
+- Comorbidity: {patient.comorbidity}
+
+📌 CLINICAL ANALYSIS GUIDELINES:
+
+1. DO NOT rely only on the top prediction.
+2. Carefully analyze ALL probabilities.
+3. If second-highest probability is close to the first → highlight uncertainty.
+4. If TB or Pneumonia probability ≥ 0.20 → consider early-stage possibility.
+5. If model confidence is LOW (<0.4):
+   → Treat prediction as "Uncertain / Possible Conditions"
+   → Do NOT strongly conclude any disease.
+6. If prediction is "Unknown":
+   → Clearly state model uncertainty
+   → Suggest further diagnostic testing
+7. Strongly correlate symptoms with predictions:
+   - If symptoms strongly indicate a disease, highlight it EVEN if model confidence is moderate.
+8. Avoid definitive diagnosis — maintain clinical caution.
 
 ==============================================================
 
-📌 Instructions for Analysis:
-
-- Carefully analyze ALL probabilities, not just the highest.
-- If TB or Pneumonia probability > 0.2, consider early-stage possibility.
-- Correlate symptoms with model predictions.
-- If symptoms strongly indicate a disease, highlight concern even if model confidence is moderate.
-- Maintain a cautious, clinical tone.
-- Do NOT give a definitive diagnosis.
-
-==============================================================
-
-🧾 Generate the report in the following structured format:
+🧾 REPORT FORMAT (STRICT):
 
 1. 🧠 Summary of Findings:
-   - Brief overview of the X-ray interpretation
+   - Mention predicted condition OR uncertainty
+   - Highlight if multiple conditions are possible
 
 2. 🔬 Clinical Interpretation:
-   - Explain possible conditions (Normal / TB / Pneumonia)
-   - Mention uncertainty if present
+   - Explain likelihood of:
+     • Normal
+     • Pneumonia
+     • Tuberculosis
+   - Clearly mention if case is:
+     → Confident / Moderate / Uncertain
 
 3. ⚠️ Risk Assessment:
-   - Clearly state if condition appears Mild / Moderate / Concerning
-   - Highlight any red flags
+   - Classify as: Low / Moderate / Concerning
+   - Highlight red flags (low oxygen, long cough, blood cough, weight loss)
 
 4. 🩺 Symptom Correlation:
-   - Connect symptoms with possible diseases
+   - Connect symptoms with possible conditions
+   - Highlight mismatches if any
 
 5. 📋 Recommended Next Steps:
-   - Suggest tests (e.g., sputum test, CT scan, blood test)
-   - Recommend consulting a doctor
+   - Suggest appropriate medical tests:
+     • Chest CT scan
+     • Sputum test (for TB)
+     • Blood tests
+     • Doctor consultation
+   - If uncertain → emphasize need for further evaluation
 
 6. ⚠️ Medical Disclaimer:
-   - State this is an AI-assisted analysis and not a confirmed diagnosis
+   - Clearly state:
+     "This is an AI-assisted analysis and not a confirmed medical diagnosis."
 
 ==============================================================
 
-Ensure the tone is:
-- Clear
-- Professional
-- Reassuring but cautious
-- Easy for a non-medical person to understand
+🧠 IMPORTANT BEHAVIOR RULES:
+
+- Be cautious, not alarming
+- If disease is "UNKNOWN" tell that image entered may not be crct or not a chest x-ray
+- Be informative, not vague
+- Be clear for non-medical users
+- If uncertain → say it clearly (DO NOT GUESS)
+- Prioritize patient safety over confidence
+
+==============================================================
+
+Generate a clear, structured, and professional medical-style report.
 """
     # 🔥 RAG CHAIN (Metadata filter is used INSIDE this)
     chain = get_rag_chain(disease, confidence)

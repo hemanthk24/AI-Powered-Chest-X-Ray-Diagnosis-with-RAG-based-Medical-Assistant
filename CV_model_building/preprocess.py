@@ -1,42 +1,49 @@
 import numpy as np
 import tensorflow as tf
 
-IMG_SIZE = 300
+import tensorflow as tf
 
 def preprocess_image_inference(image):
 
-    # PIL → array
-    img = tf.keras.utils.img_to_array(image)
-    img = tf.cast(img, tf.float32)
+    # Ensure tensor
+    image = tf.convert_to_tensor(image)
 
-    # ✅ Handle grayscale properly
-    # Case 1: (H, W) → add channel
-    if len(img.shape) == 2:
-        img = tf.expand_dims(img, axis=-1)
+    # Ensure float32 FIRST
+    image = tf.cast(image, tf.float32)
 
-    # Case 2: (H, W, 1) → convert to RGB
-    if img.shape[-1] == 1:
-        img = tf.image.grayscale_to_rgb(img)
+    # 🔥 Handle grayscale cases
+    if len(image.shape) == 2:
+        # (H, W) → (H, W, 1)
+        image = tf.expand_dims(image, axis=-1)
 
-    # Crop
-    h = tf.shape(img)[0]
-    w = tf.shape(img)[1]
+    if image.shape[-1] == 1:
+        # (H, W, 1) → (H, W, 3)
+        image = tf.image.grayscale_to_rgb(image)
+
+    # Crop (same as training)
+    h = tf.shape(image)[0]
+    w = tf.shape(image)[1]
 
     crop_ratio = 0.05
 
-    top = tf.cast(crop_ratio * tf.cast(h, tf.float32), tf.int32)
-    left = tf.cast(crop_ratio * tf.cast(w, tf.float32), tf.int32)
-    height = tf.cast((1 - 2 * crop_ratio) * tf.cast(h, tf.float32), tf.int32)
-    width = tf.cast((1 - 2 * crop_ratio) * tf.cast(w, tf.float32), tf.int32)
+    crop_top = tf.cast(crop_ratio * tf.cast(h, tf.float32), tf.int32)
+    crop_left = tf.cast(crop_ratio * tf.cast(w, tf.float32), tf.int32)
 
-    img = tf.image.crop_to_bounding_box(img, top, left, height, width)
+    crop_height = tf.cast((1 - 2 * crop_ratio) * tf.cast(h, tf.float32), tf.int32)
+    crop_width = tf.cast((1 - 2 * crop_ratio) * tf.cast(w, tf.float32), tf.int32)
 
-    # Resize
-    img = tf.image.resize(img, (IMG_SIZE, IMG_SIZE))
+    image = tf.image.crop_to_bounding_box(
+        image,
+        crop_top,
+        crop_left,
+        crop_height,
+        crop_width
+    )
 
-    img = (img / 127.5) - 1.0
+    # Resize (same)
+    image = tf.image.resize(image, (300, 300))
 
-    # Add batch
-    img = tf.expand_dims(img, axis=0)
+    # Add batch dimension
+    image = tf.expand_dims(image, axis=0)
 
-    return img
+    return image

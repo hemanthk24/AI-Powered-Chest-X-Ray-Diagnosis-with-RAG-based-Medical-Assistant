@@ -43,6 +43,7 @@ weight_loss = st.checkbox("Weight Loss")
 smoking = st.checkbox("Smoking")
 comorbidity = st.checkbox("Comorbidity (Diabetes/Asthma)")
 
+API_URL = "http://localhost:8000"
 
 # 🔥 Analyze Button
 if st.button("Analyze"):
@@ -72,7 +73,7 @@ if st.button("Analyze"):
 
             try:
                 response = requests.post(
-                    "http://127.0.0.1:8000/predict",
+                    f"{API_URL}/predict",
                     files=files,
                     data=data,
                     timeout=120
@@ -107,7 +108,7 @@ if st.session_state.result:
         st.info(f"{result['risk_level']} (Score: {result['risk_score']})")
 
     # 📄 Report
-    st.subheader("📄 AI Medical Report")
+    st.subheader("📄 AI Medical Report",text_alignment="center")
     st.write(result["response"])
 
     st.divider()
@@ -132,7 +133,7 @@ if st.session_state.result:
 
             try:
                 response = requests.post(
-                    "http://127.0.0.1:8000/chat",
+                    f"{API_URL}/chat",
                     data=data
                 )
 

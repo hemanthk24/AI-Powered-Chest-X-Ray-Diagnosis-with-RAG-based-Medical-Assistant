@@ -5,6 +5,9 @@ from langchain_classic.retrievers import EnsembleRetriever
 
 # 🔥 Metadata filter
 def get_metadata_filter(disease, confidence, threshold=0.6):
+    
+    if not disease:
+        return None
 
     disease = disease.lower()
 
